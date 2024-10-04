@@ -240,11 +240,46 @@ function my_theme_enqueue_scripts2() {
 }
 add_action('wp_enqueue_scripts', 'my_theme_enqueue_scripts2');
 
+function register_projects_rest_route() {
+    register_rest_route('custom/v1', '/projects', array(
+        'methods' => 'GET',
+        'callback' => 'get_projects',
+    ));
+}
+add_action('rest_api_init', 'register_projects_rest_route');
 
+function get_projects() {
+    $args = array(
+        'post_type' => 'projects',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+    );
 
+    $projects_query = new WP_Query($args);
+    $projects = array();
 
+    if ($projects_query->have_posts()) {
+        while ($projects_query->have_posts()) {
+            $projects_query->the_post();
 
+            $project_id = get_the_ID();
+            $title = get_the_title();
+            $url = get_post_meta($project_id, '_project_url', true);
+            $start_date = get_post_meta($project_id, '_project_start_date', true);
+            $end_date = get_post_meta($project_id, '_project_end_date', true);
 
+            $projects[] = array(
+                'title' => $title,
+                'url' => $url,
+                'start_date' => $start_date,
+                'end_date' => $end_date,
+            );
+        }
+        wp_reset_postdata();
+    }
+
+    return rest_ensure_response($projects);
+}
 
 
 
